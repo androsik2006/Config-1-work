@@ -1,186 +1,107 @@
-import os
-import sys
-import socket
-import shlex
+Технический отчет: Эмулятор UNIX-оболочки
+Общее описание
+Представленный код реализует базовый эмулятор командной строки UNIX-подобной системы на языке Python. Эмулятор поддерживает базовые функции командной оболочки, работу с переменными окружения и интерактивный режим работы.
 
+Архитектура системы
+Основной класс — UnixShellEmulator, который содержит всю логику работы эмулятора.
 
-class UnixShellEmulator:
-    def __init__(self):
-        self.current_directory = os.getcwd()
-        self.environment_vars = os.environ.copy()
-        self.is_running = True
+Основные компоненты
+Инициализация
 
-        # Добавляем системные переменные
-        self.environment_vars['USER'] = os.getenv('USER', 'user')
-        self.environment_vars['HOME'] = os.getenv('HOME', '/home/user')
-        self.environment_vars['PWD'] = self.current_directory
+Сохранение текущей директории
 
-    def generate_prompt(self):
-        """Генерация приглашения в формате username@hostname:path$"""
-        try:
-            username = self.environment_vars.get('USER', 'user')
+Копирование системных переменных окружения
 
-            try:
-                hostname = socket.gethostname()
-            except:
-                hostname = 'localhost'
+Настройка базовых переменных (USER, HOME, PWD)
 
-            home_dir = self.environment_vars.get('HOME', '')
-            display_path = self.current_directory
+Генерация приглашения
 
-            if home_dir and self.current_directory.startswith(home_dir):
-                display_path = '~' + self.current_directory[len(home_dir):]
+Форматирование строки приглашения в стиле username@hostname:path$
 
-            return f"{username}@{hostname}:{display_path}$ "
+Обработка домашней директории с заменой на символ ~
 
-        except Exception as e:
-            return "user@localhost:~$ "
+Парсинг команд
 
-    def parse_input(self, input_text):
-        """Парсер ввода с раскрытием переменных окружения"""
-        if not input_text or not input_text.strip():
-            return []
+Обработка пользовательского ввода
 
-        processed_text = input_text
-        for var_name, var_value in self.environment_vars.items():
-            placeholder = f"${var_name}"
-            processed_text = processed_text.replace(placeholder, var_value)
+Раскрытие переменных окружения
 
-        try:
-            return shlex.split(processed_text)
-        except ValueError:
-            print("Ошибка: некорректный синтаксис команды")
-            return []
+Разбивка команд на токены
 
-    def handle_ls(self, args):
-        """Обработка команды ls (заглушка)"""
-        print("Команда: ls")
-        if args:
-            print(f"Аргументы: {' '.join(args)}")
-        print("Реализация команды ls будет добавлена на следующих этапах")
+Обработка команд
 
-    def handle_cd(self, args):
-        """Обработка команды cd (заглушка)"""
-        print("Команда: cd")
-        if args:
-            print(f"Аргументы: {' '.join(args)}")
-        print("Реализация команды cd будет добавлена на следующих этапах")
+Базовые команды: ls, cd, exit
 
-    def handle_exit(self, args):
-        """Обработка команды exit"""
-        if args:
-            print(f"Аргументы exit: {' '.join(args)}")
-        print("Завершение работы эмулятора...")
-        self.is_running = False
+Обработка неизвестных команд
 
-    def handle_unknown_command(self, command, args):
-        """Обработка неизвестной команды"""
-        print(f"Команда-заглушка: {command}")
-        if args:
-            print(f"Аргументы: {' '.join(args)}")
+Обработка ошибок выполнения
 
-    def execute_command(self, tokens):
-        """Выполнение команды"""
-        if not tokens:
-            return
+Функциональные возможности
+Базовые команды
 
-        command = tokens[0]
-        args = tokens[1:]
+ls — вывод списка файлов (заглушка)
 
-        try:
-            if command == "ls":
-                self.handle_ls(args)
-            elif command == "cd":
-                self.handle_cd(args)
-            elif command == "exit":
-                self.handle_exit(args)
-            else:
-                self.handle_unknown_command(command, args)
+cd — смена директории (заглушка)
 
-        except Exception as e:
-            print(f"Ошибка выполнения команды '{command}': {e}")
+exit — завершение работы
 
-    def demonstrate(self):
-        """Демонстрация работы прототипа"""
-        print("\n" + "=" * 60)
-        print("ДЕМОНСТРАЦИЯ РАБОТЫ ПРОТОТИПА")
-        print("=" * 60)
+Работа с окружением
 
-        # Тест 1: Основные команды
-        print("\n1. ТЕСТ ОСНОВНЫХ КОМАНД:")
-        print("─" * 40)
-        self.execute_command(["ls"])
-        print()
-        self.execute_command(["cd", "/home/user"])
-        print()
-        self.execute_command(["unknown_cmd", "arg1", "arg2"])
+Поддержка переменных окружения
 
-        # Тест 2: Переменные окружения
-        print("\n2. ТЕСТ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ:")
-        print("─" * 40)
-        test_input = 'echo Домашняя директория: $HOME, Пользователь: $USER'
-        print(f"Ввод: {test_input}")
-        tokens = self.parse_input(test_input)
-        print(f"После раскрытия переменных: {tokens}")
+Автоматическое раскрытие переменных в командах
 
-        # Тест 3: Приглашение командной строки
-        print("\n3. ТЕСТ ПРИГЛАШЕНИЯ КОМАНДНОЙ СТРОКИ:")
-        print("─" * 40)
-        print(f"Пример приглашения: {self.generate_prompt()}")
+Интерактивный режим
 
-        # Тест 4: Обработка ошибок
-        print("\n4. ТЕСТ ОБРАБОТКИ ОШИБОК:")
-        print("─" * 40)
-        try:
-            test_input = 'ls -la "незакрытая кавычка'
-            print(f"Ввод с ошибкой: {test_input}")
-            tokens = self.parse_input(test_input)
-            print("Ошибка gracefully handled")
-        except Exception as e:
-            print(f"Перехвачена ошибка: {e}")
+Циклический ввод команд
 
-        print("\n" + "=" * 60)
-        print("ДЕМОНСТРАЦИЯ ЗАВЕРШЕНА. ЗАПУСКАЕМ ИНТЕРАКТИВНЫЙ РЕЖИМ...")
-        print("=" * 60)
+Обработка прерываний
 
-    def run(self):
-        """Главный цикл REPL"""
-        self.demonstrate()
+Корректная обработка ошибок
 
-        print("Добро пожаловать в эмулятор UNIX-оболочки!")
-        print("Доступные команды: ls, cd, exit")
-        print("Поддержка переменных окружения: $HOME, $USER, $PWD")
-        print("Для выхода введите 'exit' или Ctrl+D")
-        print("─" * 60)
+Демонстрационный модуль
+Демонстрация включает:
 
-        while self.is_running:
-            try:
-                prompt = self.generate_prompt()
-                user_input = input(prompt).strip()
+Тест основных команд
 
-                if not user_input:
-                    continue
+Проверку работы с переменными окружения
 
-                tokens = self.parse_input(user_input)
-                if tokens:
-                    self.execute_command(tokens)
+Тестирование приглашения командной строки
 
-            except EOFError:  # Ctrl+D
-                print("\nЗавершение работы...")
-                break
-            except KeyboardInterrupt:  # Ctrl+C
-                print("\nДля выхода используйте 'exit'")
-                continue
-            except Exception as e:
-                print(f"Неожиданная ошибка: {e}")
-                break
+Обработку ошибок ввода
 
+Реализация главного цикла
+Основной цикл обеспечивает:
 
-def main():
-    """Точка входа"""
-    shell = UnixShellEmulator()
-    shell.run()
+Генерацию приглашения
 
+Прием и обработку команд
 
-if __name__ == "__main__":
-    main()
+Корректное завершение работы
+
+Обработку прерываний
+
+Рекомендации по улучшению
+Расширение функциональности
+
+Реализация полноценной обработки команд ls и cd
+
+Добавление новых команд
+
+Поддержка пайпов и перенаправления
+
+Улучшение обработки ошибок
+
+Более детальная обработка ошибок
+
+Логирование действий
+
+Оптимизация производительности
+
+Кэширование часто используемых данных
+
+Оптимизация работы с переменными окружения
+
+Заключение
+Представленный код является хорошим базовым примером реализации командной оболочки. Он демонстрирует основные принципы работы с командной строкой, обработку ввода и работу с системными переменными. Код хорошо структурирован и содержит необходимые механизмы обработки ошибок, что делает его отличным стартовым пунктом для дальнейшего развития проекта.
+<img width="845" height="436" alt="image" src="https://github.com/user-attachments/assets/d011ac87-ee04-4e31-9487-143b37fa40ae" />
